@@ -13,7 +13,7 @@
     --ink:#2A2318;
     --ink-soft:#5C5343;
     --line:#CDBE9C;
-    --line-faint:#d9ceb2;
+    --line-faint:#E3D8BC;
     --rust:#A15C38;
     --rust-dark:#7C4327;
     --leaf:#5E7247;
@@ -303,6 +303,10 @@
         <input type="text" id="f-seller" placeholder="Business name" required>
         <div class="field-error" id="err-seller">Enter the seller's name.</div>
       </div>
+      <div>
+        <label for="f-phone">Phone / WhatsApp</label>
+        <input type="tel" id="f-phone" placeholder="+91 98765 43210">
+      </div>
 
       <div>
         <label for="f-sellertype">Seller type</label>
@@ -329,7 +333,7 @@
           <option>W240</option>
           <option>W320</option>
           <option>W450</option>
-          <option>SW</option>
+          <option>SWP</option>
           <option>Splits</option>
           <option>Pieces</option>
           <option>BB</option>
@@ -436,7 +440,7 @@
   }
 
   function computeStats(){
-    var grades = ['W320','W240','W180','W450'];
+    var grades = ['W320','W240','W180','W450','SWP','Splits','Pieces','BB','Other'];
     var byGrade = {};
     grades.forEach(function(g){ byGrade[g] = []; });
     entries.forEach(function(e){
@@ -466,6 +470,7 @@
         '<td>' + esc(e.date || '') + '</td>' +
         '<td>' + esc(e.location || '') + '</td>' +
         '<td>' + esc(e.seller || '') + '</td>' +
+        '<td>' + esc(e.phone || '') + '</td>' +
         '<td>' + esc(e.sellertype || '') + '</td>' +
         '<td>' + esc(e.grade || '') + '</td>' +
         '<td class="num">' + (e.buy ? fmtMoney(e.buy) : '—') + '</td>' +
@@ -476,7 +481,7 @@
         '</tr>';
     }).join('');
     wrap.innerHTML = '<table><thead><tr>' +
-      '<th>Date</th><th>Location</th><th>Seller</th><th>Type</th><th>Grade</th>' +
+      '<th>Date</th><th>Location</th><th>Seller</th><th>Phone</th><th>Type</th><th>Grade</th>' +
       '<th>Buy/kg</th><th>Sell/kg</th><th>Basis</th><th>Qual.</th><th></th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table>';
 
@@ -498,21 +503,18 @@
     return div.innerHTML;
   }
 
-  function persist(){
+  async function persist(){
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      await window.storage.set(STORAGE_KEY, JSON.stringify(entries), false);
     } catch (err) {
       console.error('Storage error:', err);
-      var banner = document.getElementById('form-banner');
-      banner.textContent = 'Could not save to this browser\'s storage: ' + err.message;
-      banner.classList.add('show');
     }
   }
 
-  function load(){
+  async function load(){
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      entries = raw ? JSON.parse(raw) : [];
+      var res = await window.storage.get(STORAGE_KEY, false);
+      entries = res && res.value ? JSON.parse(res.value) : [];
     } catch (err) {
       entries = [];
     }
@@ -561,6 +563,7 @@
       date: date,
       location: location,
       seller: seller,
+      phone: document.getElementById('f-phone').value.trim(),
       sellertype: document.getElementById('f-sellertype').value,
       grade: document.getElementById('f-grade').value,
       product: document.getElementById('f-product').value,
@@ -603,8 +606,8 @@
 
   document.getElementById('export-btn').addEventListener('click', function(){
     if (!entries.length) return;
-    var cols = ['date','location','seller','sellertype','grade','product','pack','buy','sell','basis','origin','quality','moq','credit','notes'];
-    var header = ['Date','Location','Seller/Business','Seller Type','Grade','Product Type','Pack/Quantity (kg)','Buying Price/kg','Selling Price/kg','Price Basis','Origin','Quality Rating (1-5)','MOQ (kg)','Credit Days','Notes'];
+    var cols = ['date','location','seller','phone','sellertype','grade','product','pack','buy','sell','basis','origin','quality','moq','credit','notes'];
+    var header = ['Date','Location','Seller/Business','Contact/WhatsApp','Seller Type','Grade','Product Type','Pack/Quantity (kg)','Buying Price/kg','Selling Price/kg','Price Basis','Origin','Quality Rating (1-5)','MOQ (kg)','Credit Days','Notes'];
     var lines = [header.join(',')];
     entries.forEach(function(e){
       var row = cols.map(function(c){
